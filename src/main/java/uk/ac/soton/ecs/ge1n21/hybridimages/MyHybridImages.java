@@ -11,18 +11,71 @@ public class MyHybridImages {
      * @param highSigma the standard deviation of the low-pass component of computing the high-pass filtered image
      * @return the computed hybrid image
      */
+
     public static MBFImage makeHybrid(MBFImage lowImage, float lowSigma, MBFImage highImage, float highSigma) {
-        //implement your hybrid images functionality here.
-        //Your submitted code must contain this method, but you can add
-        //additional static methods or implement the functionality through
-        //instance methods on the `MyHybridImages` class of which you can create
-        //an instance of here if you so wish.
-        //Note that the input images are expected to have the same size, and the output //image will also have the same height & width as the inputs.
+
+
+        MyConvolution highConv = new MyConvolution(makeGaussianKernel(highSigma));
+        MyConvolution lowConv = new MyConvolution(makeGaussianKernel(lowSigma));
+
+        //low pass on low image
+        lowImage.internalAssign(lowImage.process(lowConv));
+
+        MBFImage clone = highImage.process(highConv);
+
+        //subtract low pass from high image
+        highImage.subtractInplace(clone);
+
+        //add both images
+        lowImage.addInplace(highImage);
+
         return lowImage;
-    }
+     }
 
     public static float[][] makeGaussianKernel(float sigma) {
-        //Use this function to create a 2D gaussian kernel with standard deviation sigma. //The kernel values should sum to 1.0, and the size should be floor(8*sigma+1) or //floor(8*sigma+1)+1 (whichever is odd) as per the assignment specification.
-        return new float[0][];
+
+        int size = (int) Math.floor(8*sigma+1);
+
+        if (size%2 == 0) {
+            size++;
+        }
+
+        float[][] kernel = new float[size][size];
+
+        int centre = (int) (double) (size / 2);
+        float sum = 0F;
+
+        //calculate the value for each cell in the kernel
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+
+                float g = gaussian(i-centre,j-centre,sigma);
+                kernel[i][j] = g;
+                sum += g;
+
+            }
+        }
+
+        // Try here to get values to exactly sum to one but cant due to floating point error
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                kernel[i][j] = kernel[i][j]/sum;
+            }
+        }
+
+
+        return kernel;
     }
+
+    //calculation
+    public static float gaussian(int x, int y, float sigma) {
+
+        float fraction = (float) (1/(2*Math.PI*(Math.pow(sigma,2))));
+
+        float exponent = (float) Math.exp((-1*(Math.pow(x,2) + Math.pow(y,2)))/(2*Math.pow(sigma,2)));
+
+        return fraction*exponent;
+    }
+
+
 }
